@@ -3,19 +3,12 @@ import re
 from pathlib import Path
 from collections import Counter
 from flask import Flask, request, jsonify
-from dotenv import load_dotenv
 
 # -----------------------------
 # CONFIG
 # -----------------------------
 CORPUS_DIR = Path("./CORPUSES")
 LOWERCASE = True
-
-# Load API keys from environment variable (comma-separated)
-load_dotenv()
-
-# Load API keys
-API_KEYS = set(k.strip() for k in os.environ.get("API_KEYS", "").split(","))
 
 # -----------------------------
 # REGEX
@@ -101,10 +94,6 @@ def health():
 @app.route("/detect", methods=["GET"])
 def detect():
     try:
-        key = request.headers.get("x-api-key") or request.args.get("api_key")
-        if key not in API_KEYS:
-            return jsonify({"error": "Unauthorized"}), 401
-
         text = request.args.get("text", "")
         if not text:
             return jsonify({"error": "No text provided"}), 400
