@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 from collections import Counter
 from flask import Flask, request, jsonify
+from dotenv import load_dotenv
 
 # -----------------------------
 # CONFIG
@@ -11,7 +12,10 @@ CORPUS_DIR = Path("./CORPUSES")
 LOWERCASE = True
 
 # Load API keys from environment variable (comma-separated)
-API_KEYS = set(os.environ.get("API_KEYS", "").split(","))
+load_dotenv()
+
+# Load API keys
+API_KEYS = set(k.strip() for k in os.environ.get("API_KEYS", "").split(","))
 
 # -----------------------------
 # REGEX
