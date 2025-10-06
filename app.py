@@ -9,33 +9,34 @@ from flask import Flask, request, jsonify
 # -----------------------------
 CORPUS_DIR = Path("./CORPUSES")
 LOWERCASE = True
-API_KEYS = {"a232jda", "b123xyz", "key3"}  # Add all valid keys
+API_KEYS = {"a232jda", "b123xyz", "key3"}  # Add all your valid API keys here
 
 # -----------------------------
 # REGEX
 # -----------------------------
-WORD_RE = re.compile(
-    r"[^\w\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+",
-    re.UNICODE
-)
+WORD_RE = re.compile(r"[^\w\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+", re.UNICODE)
 
 # -----------------------------
 # UTILITIES
 # -----------------------------
-def clean_words(text: str) -> str:
-    text = WORD_RE.sub(" ", text)
-    return text.lower() if LOWERCASE else text
-
-def get_lang_from_filename(filename: str):
+def get_lang_from_filename(filename):
     if filename.startswith("corpus-") and filename.endswith(".txt"):
         return filename.split("-", 1)[1].split(".")[0]
     return None
 
+def clean_words(text):
+    text = WORD_RE.sub(" ", text)
+    return text.lower() if LOWERCASE else text
+
 # -----------------------------
 # BUILD LANGUAGE MODELS
 # -----------------------------
-def build_language_data(corpus_dir: Path):
+def build_language_data(corpus_dir):
     lang_models = {}
+    if not corpus_dir.exists():
+        print(f"[warn] Corpus folder {corpus_dir} does not exist.")
+        return lang_models
+
     for path in corpus_dir.glob("corpus-*.txt"):
         lang = get_lang_from_filename(path.name)
         if not lang:
@@ -43,7 +44,7 @@ def build_language_data(corpus_dir: Path):
         try:
             text = path.read_text(encoding="utf-8")
         except Exception as e:
-            print(f"[warn] failed to read {path}: {e}")
+            print(f"[warn] Failed to read {path}: {e}")
             continue
 
         words = clean_words(text).split()
@@ -53,12 +54,13 @@ def build_language_data(corpus_dir: Path):
     return lang_models
 
 # -----------------------------
-# DETECTION
+# HIT-BASED WORD-LEVEL DETECTION
 # -----------------------------
 def detect_language_hits(text, lang_models):
     words = clean_words(text).split()
-    if not words:
+    if not words or not lang_models:
         return {}
+
     hits = {lang: 0 for lang in lang_models}
     for w in words:
         for lang, model in lang_models.items():
@@ -77,11 +79,11 @@ def detect_language_hits(text, lang_models):
 # FLASK API
 # -----------------------------
 app = Flask(__name__)
+
 print("Building language models...")
-lang_models = build_language_data(CORPUSES)
+lang_models = build_language_data(CORPUS_DIR)
 if not lang_models:
-    print("[error] No corpora found. Place corpus-eng.txt, corpus-fra.txt, etc. in ./CORPUSES")
-    exit(1)
+    print("[warn] No corpora found. Place files like corpus-eng.txt, corpus-fra.txt, etc. in ./CORPUSES")
 
 @app.route("/detect", methods=["GET"])
 def detect():
@@ -90,6 +92,9 @@ def detect():
         return jsonify({"error": "Unauthorized"}), 401
 
     text = request.args.get("text", "")
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+
     probs = detect_language_hits(text, lang_models)
     return jsonify(probs)
 
@@ -98,7 +103,7 @@ def health():
     return jsonify({"data": "running!"})
 
 # -----------------------------
-# RUN
+# MAIN
 # -----------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
