@@ -90,6 +90,7 @@ def health():
     return jsonify({"status": "running!"})
 
 @app.route("/detect", methods=["GET"])
+@app.route("/detect", methods=["GET"])
 def detect():
     try:
         key = request.headers.get("x-api-key") or request.args.get("api_key")
@@ -102,7 +103,10 @@ def detect():
 
         # Detect language
         probs = detect_language_hits(text, lang_models)
-        return jsonify(probs, "prompt": text)
+        result = probs.copy()
+        result["prompt"] = text
+
+        return jsonify(result)
 
     except Exception as e:
         # Return JSON instead of crashing Gunicorn
