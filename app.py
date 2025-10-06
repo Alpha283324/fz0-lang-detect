@@ -102,7 +102,7 @@ def detect():
 
         # Detect language
         probs = detect_language_hits(text, lang_models)
-        return jsonify(probs)
+        return jsonify(probs, "prompt": text)
 
     except Exception as e:
         # Return JSON instead of crashing Gunicorn
