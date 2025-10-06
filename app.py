@@ -9,12 +9,17 @@ from flask import Flask, request, jsonify
 # -----------------------------
 CORPUS_DIR = Path("./CORPUSES")
 LOWERCASE = True
-API_KEYS = {"a232jda", "b123xyz", "key3"}  # Your valid API keys
+
+# Load API keys from environment variable (comma-separated)
+API_KEYS = set(os.environ.get("API_KEYS", "").split(","))
 
 # -----------------------------
 # REGEX
 # -----------------------------
-WORD_RE = re.compile(r"[^\w\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+", re.UNICODE)
+WORD_RE = re.compile(
+    r"[^\w\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+",
+    re.UNICODE
+)
 
 # -----------------------------
 # UTILITIES
@@ -90,7 +95,6 @@ def health():
     return jsonify({"status": "running!"})
 
 @app.route("/detect", methods=["GET"])
-@app.route("/detect", methods=["GET"])
 def detect():
     try:
         key = request.headers.get("x-api-key") or request.args.get("api_key")
@@ -109,7 +113,6 @@ def detect():
         return jsonify(result)
 
     except Exception as e:
-        # Return JSON instead of crashing Gunicorn
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 # -----------------------------
