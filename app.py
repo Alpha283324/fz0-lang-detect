@@ -91,19 +91,22 @@ def health():
 
 @app.route("/detect", methods=["GET"])
 def detect():
-    # API key check
-    key = request.headers.get("x-api-key") or request.args.get("api_key")
-    if key not in API_KEYS:
-        return jsonify({"error": "Unauthorized"}), 401
+    try:
+        key = request.headers.get("x-api-key") or request.args.get("api_key")
+        if key not in API_KEYS:
+            return jsonify({"error": "Unauthorized"}), 401
 
-    # Text input
-    text = request.args.get("text", "")
-    if not text:
-        return jsonify({"error": "No text provided"}), 400
+        text = request.args.get("text", "")
+        if not text:
+            return jsonify({"error": "No text provided"}), 400
 
-    # Detect
-    probs = detect_language_hits(text, lang_models)
-    return jsonify(probs)
+        # Detect language
+        probs = detect_language_hits(text, lang_models)
+        return jsonify(probs)
+
+    except Exception as e:
+        # Return JSON instead of crashing Gunicorn
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 # -----------------------------
 # MAIN
